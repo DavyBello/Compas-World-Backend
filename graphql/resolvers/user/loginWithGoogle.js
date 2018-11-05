@@ -18,8 +18,6 @@ module.exports = {
   }`,
   resolve: async ({ args, context: { req, res } }) => {
     const { input: { accessToken } } = args;
-    // console.log('accessToken');
-    // console.log(accessToken);
     req.body = {
       ...req.body,
       access_token: accessToken,
@@ -50,27 +48,4 @@ module.exports = {
       })(req, res);
     }));
   },
-  // try {
-  //   const user = await User.findOne({ accessToken });
-  //   if (user) {
-  //     return new Promise((resolve, reject) => {
-  //       // validate password
-  //       user._.password.compare(password, (err, isMatch) => {
-  //         if (err) {
-  //           reject(err);
-  //         }
-  //         if (isMatch) {
-  //           resolve({
-  //             name: user.name,
-  //             token: user.signToken(),
-  //           });
-  //         }
-  //         reject(Error('password incorrect'));
-  //       });
-  //     });
-  //   }
-  //   return Promise.reject(Error('accessToken/user not found'));
-  // } catch (e) {
-  //   return Promise.reject(e);
-  // }
 };

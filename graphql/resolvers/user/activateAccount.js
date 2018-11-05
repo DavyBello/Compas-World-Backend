@@ -8,14 +8,18 @@ module.exports = {
   kind: 'mutation',
   name: 'activateAccount',
   description: 'Activate a User account',
-  args: { code: 'String!' },
+  args: {
+    input: `input ActivateUserAccountInput {
+      code: String!
+		}`,
+  },
   type: `type ActivateUserAccountPayload {
     token: String!
     userType: String!
     name: String!
   }`,
   resolve: async ({ args }) => {
-    const { code } = args;
+    const { input: { code } } = args;
     try {
       const data = jwt.verify(code, process.env.ACTIVATION_JWT_SECRET);
       const { id, createdAt } = data;

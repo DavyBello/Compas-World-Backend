@@ -5,9 +5,6 @@ const {
 const {
   updateSelf,
 } = require('../utils/common');
-const {
-  addPost,
-} = require('../resolvers/mutations');
 
 const {
   UserTC,
@@ -15,8 +12,6 @@ const {
 } = require('../composers');
 
 module.exports = {
-  addPost,
-
   // unauthorized user mutations
   loginUser: UserTC.getResolver('loginWithEmail'),
   authGoogle: UserTC.getResolver('loginWithGoogle'),
