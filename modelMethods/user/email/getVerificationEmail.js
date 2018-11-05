@@ -1,19 +1,16 @@
 const keystone = require('keystone');
-const jwt = require('jsonwebtoken');
 
 const prepareEmail = require('../../../lib/prepareEmail');
+const createAccountVerificationCode = require('../../../lib/createAccountVerificationCode');
 
-module.exports = function getActivationLinkEmail() {
+module.exports = function getVerificationEmail() {
   const user = this;
   console.log('sending user activation email');
   if (user.isActivated) return (Error('Account is already activated'));
 
   const brandDetails = keystone.get('brandDetails');
 
-  const code = jwt.sign({
-    id: user._id,
-    createdAt: Date.now(),
-  }, process.env.ACTIVATION_JWT_SECRET);
+  const code = createAccountVerificationCode(user);
   const activationLink = `${process.env.FRONT_END_URL}/activate?code=${code}`;
 
   return prepareEmail({

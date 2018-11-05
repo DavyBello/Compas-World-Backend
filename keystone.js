@@ -72,7 +72,7 @@ keystone.set('brandDetails', {
 checkEnv([
   'JWT_SECRET',
   'PASSWORD_VERSION_SECRET',
-  'ACTIVATION_JWT_SECRET',
+  'CODEGEN_JWT_SECRET',
 ]);
 
 mailgunUtils.checkMailgun();

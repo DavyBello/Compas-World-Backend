@@ -21,6 +21,8 @@ User.add({
   password: { type: Types.Password, initial: true },
   passwordVersion: { type: Types.Number, required: true, default: 1 },
   isActivated: { type: Boolean, default: false, noedit: true },
+  // user email verification status
+  isVerified: { type: Boolean, default: false, noedit: true },
   // googleProvider
   _gP: {
     id: { type: String, noedit: true },
@@ -39,13 +41,20 @@ User.schema.pre('save', (next) => {
   next();
 });
 
-// Methods
+/**
+ * Methods
+ */
 const {
-  getActivationLinkEmail, getPasswordResetLinkEmail, signToken, upsertGoogleUser,
+  getVerificationEmail,
+  getPasswordResetLinkEmail,
+  signToken,
+  upsertGoogleUser,
 } = ModelMethods;
 
-User.schema.methods.getActivationLinkEmail = getActivationLinkEmail;
+User.schema.methods.getVerificationEmail = getVerificationEmail;
 User.schema.methods.getPasswordResetLinkEmail = getPasswordResetLinkEmail;
+
+// AUth
 User.schema.methods.signToken = signToken;
 
 // Static Methods

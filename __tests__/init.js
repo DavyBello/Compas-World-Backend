@@ -18,7 +18,7 @@ keystone.import('../models');
 checkEnv([
   'JWT_SECRET',
   'PASSWORD_VERSION_SECRET',
-  'ACTIVATION_JWT_SECRET',
+  'CODEGEN_JWT_SECRET',
 ]);
 
 keystone.pvCryptr = new Cryptr(process.env.PASSWORD_VERSION_SECRET);

@@ -36,7 +36,7 @@ module.exports = {
         });
         await newUser.save();
         // Send user activation email on sign up
-        // newUser.getActivationLinkEmail().send();
+        // newUser.getVerificationEmail().send();
         return {
           name: newUser.name,
           token: newUser.signToken(),

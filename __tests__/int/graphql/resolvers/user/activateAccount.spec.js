@@ -12,16 +12,15 @@ const {
 const { expect } = chai;
 
 // language=GraphQL
-const LOGIN_CANDIDATE_MUTATION = `
+const USER_ACTIVATE_ACCOUNT_MUTATION = `
 mutation M(
-  $phone: String!,
-  $password: String!
+  $code: String!
 ) {
-  loginCandidate(input: {
-    phone: $phone,
-    password: $password
+  userActivateAccount(input: {
+    code: $code
   }) {
     token
+    userType
     name
   }
 }
@@ -33,27 +32,26 @@ beforeEach(clearDbAndRestartCounters);
 
 after(disconnectMongoose);
 
-describe.skip('activateAccount Mutation', () => {
-  it('should not login if phone is not in the database', async () => {
-    const query = LOGIN_CANDIDATE_MUTATION;
+describe('activateAccount Mutation', () => {
+  it.only('should return an error if the token is invalid', async () => {
+    const query = USER_ACTIVATE_ACCOUNT_MUTATION;
 
     const rootValue = {};
     const context = getContext();
     const variables = {
-      phone: '0818855561',
-      password: 'awesome',
+      code: '0818855561'
     };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate).to.equal(null);
-    expect(result.errors[0].message).to.equal('phone/user not found');
+    expect(result.data.userActivateAccount).to.equal(null);
+    expect(result.errors[0].message).to.equal('JsonWebTokenError: jwt malformed');
   });
 
   it('should not login with wrong password', async () => {
     const user = await createRows.createCandidate();
 
-    const query = LOGIN_CANDIDATE_MUTATION;
+    const query = USER_ACTIVATE_ACCOUNT_MUTATION;
 
     const rootValue = {};
     const context = getContext();
@@ -64,7 +62,7 @@ describe.skip('activateAccount Mutation', () => {
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate).to.equal(null);
+    expect(result.data.userActivateAccount).to.equal(null);
     expect(result.errors[0].message).to.equal('invalid password');
   });
 
@@ -72,7 +70,7 @@ describe.skip('activateAccount Mutation', () => {
     const password = 'awesome';
     const user = await createRows.createCandidate({ password });
 
-    const query = LOGIN_CANDIDATE_MUTATION;
+    const query = USER_ACTIVATE_ACCOUNT_MUTATION;
 
     const rootValue = {};
     const context = getContext();
@@ -83,8 +81,8 @@ describe.skip('activateAccount Mutation', () => {
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate.name).to.equal(user.name);
-    expect(result.data.loginCandidate.token).to.exist;
+    expect(result.data.userActivateAccount.name).to.equal(user.name);
+    expect(result.data.userActivateAccount.token).to.exist;
     expect(result.errors).to.be.undefined;
   });
 });

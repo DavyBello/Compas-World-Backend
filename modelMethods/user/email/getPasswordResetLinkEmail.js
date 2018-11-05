@@ -1,7 +1,7 @@
 const keystone = require('keystone');
-const jwt = require('jsonwebtoken');
 
 const prepareEmail = require('../../../lib/prepareEmail');
+const createPasswordResetCode = require('../../../lib/createPasswordResetCode');
 
 module.exports = function getPasswordResetLinkEmail() {
   const user = this;
@@ -9,11 +9,7 @@ module.exports = function getPasswordResetLinkEmail() {
 
   const brandDetails = keystone.get('brandDetails');
 
-  const code = jwt.sign({
-    id: user._id,
-    createdAt: Date.now(),
-    pv: keystone.pvCryptr.encrypt(user.passwordVersion),
-  }, process.env.ACTIVATION_JWT_SECRET);
+  const code = createPasswordResetCode(user);
   const resetLink = `${process.env.FRONT_END_URL}/forgot/change?code=${code}`;
 
   return prepareEmail({

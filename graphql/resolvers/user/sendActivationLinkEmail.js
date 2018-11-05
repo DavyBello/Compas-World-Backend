@@ -7,9 +7,9 @@ module.exports = {
 		email: String!
 	}`,
   resolve: async ({ context: { viewer } }) => {
-    if (viewer.getActivationLinkEmail) {
+    if (viewer.getVerificationEmail) {
       try {
-        await viewer.getActivationLinkEmail().send();
+        await viewer.getVerificationEmail().send();
         return ({
           status: 'success',
           email: viewer.email,
