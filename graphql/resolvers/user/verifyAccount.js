@@ -8,7 +8,7 @@ const { UserInputError } = require('apollo-server');
 
 module.exports = {
   kind: 'mutation',
-  name: 'activateAccount',
+  name: 'verifyAccount',
   description: 'Activate a User account',
   args: {
     input: `input ActivateUserAccountInput {

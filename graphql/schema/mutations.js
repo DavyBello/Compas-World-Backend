@@ -16,7 +16,7 @@ module.exports = {
   loginUser: UserTC.getResolver('loginWithEmail'),
   authGoogle: UserTC.getResolver('loginWithGoogle'),
   userCreateAccount: UserTC.getResolver('createAccount'),
-  userActivateAccount: UserTC.getResolver('activateAccount'),
+  userVerifyAccount: UserTC.getResolver('verifyAccount'),
   userSendPasswordResetLink: UserTC.getResolver('sendPasswordResetLinkEmail'),
   userResetPassword: UserTC.getResolver('resetPassword'),
 
