@@ -1,5 +1,8 @@
+const keystone = require('keystone');
 const chai = require('chai');
 const { graphql } = require('graphql');
+
+const User = keystone.list('User').model;
 
 const schema = require('../../../../../graphql/schema');
 
@@ -47,7 +50,7 @@ describe('verifyAccount Mutation', () => {
     expect(result.data.userVerifyAccount).to.equal(null);
     expect(result.errors[0].message).to.equal('JsonWebTokenError: jwt malformed');
   });
-  
+
   it('should return an error if the token is invalid', async () => {
     const query = USER_ACTIVATE_ACCOUNT_MUTATION;
 
@@ -62,7 +65,7 @@ describe('verifyAccount Mutation', () => {
     expect(result.data.userVerifyAccount).to.equal(null);
     expect(result.errors[0].message).to.equal('invalid token');
   });
-  
+
   it('should return an error if the token is expired', async () => {
     const query = USER_ACTIVATE_ACCOUNT_MUTATION;
 
@@ -79,7 +82,7 @@ describe('verifyAccount Mutation', () => {
     expect(result.data.userVerifyAccount).to.equal(null);
     expect(result.errors[0].message).to.equal('expired token');
   });
-  
+
   it('should return an error if the user is already verified', async () => {
     const user = await createRows.createUser({
       isVerified: true
@@ -98,9 +101,10 @@ describe('verifyAccount Mutation', () => {
     expect(result.data.userVerifyAccount).to.equal(null);
     expect(result.errors[0].message).to.equal('verified account');
   });
-  
-  it.only('should verify user if code is valid', async () => {
-    const user = await createRows.createUser();
+
+  it('should verify user if code is valid', async () => {
+    const user = await createRows.createUser({ isVerified: false });
+    expect(user.isVerified).to.equal(false);
 
     const query = USER_ACTIVATE_ACCOUNT_MUTATION;
 
@@ -111,9 +115,12 @@ describe('verifyAccount Mutation', () => {
     const variables = { code };
 
     const result = await graphql(schema, query, rootValue, context, variables);
-    console.log(result);
 
-    expect(result.data.userVerifyAccount.token).to.equal(user.signToken());
-    expect(result.errors[0].message).to.equal('verified account');
+    expect(result.data.userVerifyAccount.name).to.exist;
+    expect(result.data.userVerifyAccount.token).to.exist;
+    expect(result.errors).to.be.undefined;
+
+    const _user = await User.findById(user._id);
+    expect(_user.isVerified).to.equal(true);
   });
 });
