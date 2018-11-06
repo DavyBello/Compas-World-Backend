@@ -48,10 +48,10 @@ describe('verifyAccount Mutation', () => {
     expect(result.errors[0].message).to.equal('JsonWebTokenError: jwt malformed');
   });
   
-  it.only('should return an error if the token is invalid', async () => {
+  it('should return an error if the token is invalid', async () => {
     const query = USER_ACTIVATE_ACCOUNT_MUTATION;
 
-    const code = createAccountVerificationCode({ id: null });
+    const code = createAccountVerificationCode({ _id: null });
 
     const rootValue = {};
     const context = getContext();
@@ -62,42 +62,58 @@ describe('verifyAccount Mutation', () => {
     expect(result.data.userVerifyAccount).to.equal(null);
     expect(result.errors[0].message).to.equal('invalid token');
   });
-
-  it('should not login with wrong password', async () => {
-    const user = await createRows.createCandidate();
-
+  
+  it('should return an error if the token is expired', async () => {
     const query = USER_ACTIVATE_ACCOUNT_MUTATION;
+
+    const code = createAccountVerificationCode({ _id: 'exampleid' }, {
+      createdAt: (d => new Date(d.setDate(d.getDate() - 1)))(new Date)
+    });
 
     const rootValue = {};
     const context = getContext();
-    const variables = {
-      phone: user.phone,
-      password: 'awesome',
-    };
+    const variables = { code };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
     expect(result.data.userVerifyAccount).to.equal(null);
-    expect(result.errors[0].message).to.equal('invalid password');
+    expect(result.errors[0].message).to.equal('expired token');
   });
-
-  it('should generate token when email and password is correct', async () => {
-    const password = 'awesome';
-    const user = await createRows.createCandidate({ password });
+  
+  it('should return an error if the user is already verified', async () => {
+    const user = await createRows.createUser({
+      isVerified: true
+    });
 
     const query = USER_ACTIVATE_ACCOUNT_MUTATION;
 
+    const code = createAccountVerificationCode(user);
+
     const rootValue = {};
     const context = getContext();
-    const variables = {
-      phone: user.phone,
-      password: 'awesome',
-    };
+    const variables = { code };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.userVerifyAccount.name).to.equal(user.name);
-    expect(result.data.userVerifyAccount.token).to.exist;
-    expect(result.errors).to.be.undefined;
+    expect(result.data.userVerifyAccount).to.equal(null);
+    expect(result.errors[0].message).to.equal('verified account');
+  });
+  
+  it.only('should verify user if code is valid', async () => {
+    const user = await createRows.createUser();
+
+    const query = USER_ACTIVATE_ACCOUNT_MUTATION;
+
+    const code = createAccountVerificationCode(user);
+
+    const rootValue = {};
+    const context = getContext();
+    const variables = { code };
+
+    const result = await graphql(schema, query, rootValue, context, variables);
+    console.log(result);
+
+    expect(result.data.userVerifyAccount.token).to.equal(user.signToken());
+    expect(result.errors[0].message).to.equal('verified account');
   });
 });
