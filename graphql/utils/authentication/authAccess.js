@@ -1,7 +1,7 @@
 const { AuthenticationError, ForbiddenError } = require('apollo-server');
 
 module.exports = (options = {}, resolvers) => {
-  const { scope, isActivated = false } = options;
+  const { scope, isVerified = false } = options;
   if (!scope) {
     throw new ForbiddenError('provide an authentication scope for this wrapper');
   }
@@ -22,8 +22,8 @@ module.exports = (options = {}, resolvers) => {
         if (scope !== rp.context.scope) {
           throw new AuthenticationError('user is not permitted to perform this action');
         }
-        if (isActivated) {
-          if (!vieweruser.isVerified) {
+        if (isVerified) {
+          if (!viewerUser.isVerified) {
             throw new ForbiddenError('user account is not activated');
           }
         }

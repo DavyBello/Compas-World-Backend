@@ -22,7 +22,7 @@ const VIEWER_QUERY = `
       name
       username
       email
-      isActivated
+      isVerified
     }
   }
 }
