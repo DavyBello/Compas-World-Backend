@@ -23,7 +23,7 @@ module.exports = (options = {}, resolvers) => {
           throw new AuthenticationError('user is not permitted to perform this action');
         }
         if (isActivated) {
-          if (!viewerUser.isActivated) {
+          if (!vieweruser.isVerified) {
             throw new ForbiddenError('user account is not activated');
           }
         }
