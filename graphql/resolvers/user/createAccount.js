@@ -1,5 +1,5 @@
 const keystone = require('keystone');
-// const { UserInputError } = require('apollo-server');
+const { UserInputError } = require('apollo-server');
 
 const User = keystone.list('User').model;
 
@@ -42,8 +42,10 @@ module.exports = {
           token: newUser.signToken(),
         };
       }
-      return Promise.reject(Error('username/email already exists'));
-      // throw new UserInputError('username already exists');
+      if (existing.email === email) {
+        return Promise.reject(new UserInputError('email already exists'));
+      }
+      return Promise.reject(new UserInputError('username already exists'));
     } catch (e) {
       return Promise.reject(e);
     }

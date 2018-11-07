@@ -61,7 +61,6 @@ User.schema.methods.signToken = signToken;
 // Static Methods
 User.schema.statics.upsertGoogleUser = upsertGoogleUser;
 
-
 /**
  * Registration
  */
