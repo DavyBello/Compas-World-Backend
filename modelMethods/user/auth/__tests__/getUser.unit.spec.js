@@ -67,7 +67,7 @@ describe('getUser', () => {
     const candidate = await viewer;
 
     expect(candidate._id).to.be.deep.equal(me._id);
-    expect(candidate.passwordVersion).to.equal(me.passwordVersion);
+    expect(candidate._pv).to.equal(me._pv);
     expect(candidate.firstName).to.equal(me.firstName);
     expect(candidate.lastName).to.equal(me.lastName);
     expect(candidate.phone).to.equal(me.phone);

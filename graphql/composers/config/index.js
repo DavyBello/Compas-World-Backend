@@ -1,5 +1,5 @@
-const noviewUserFields = ['password', 'passwordVersion'];
-const noeditUserFields = ['password', 'passwordVersion', 'isActivated', 'isVerified'];
+const noviewUserFields = ['password', '_pv'];
+const noeditUserFields = ['password', '_pv', 'isActivated', 'isVerified'];
 
 module.exports = {
   UserTCOptions: {

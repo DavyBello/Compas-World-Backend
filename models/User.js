@@ -20,7 +20,8 @@ User.add({
     type: Types.Email, initial: true, required: true, unique: true, index: true,
   },
   password: { type: Types.Password, initial: true },
-  passwordVersion: { type: Types.Number, required: true, default: 1 },
+  // passwordVersion
+  _pv: { type: Types.Number, required: true, default: 1 },
   isActivated: { type: Boolean, default: false, noedit: true },
   // user email verification status
   isVerified: { type: Boolean, default: false, noedit: true },

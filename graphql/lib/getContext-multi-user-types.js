@@ -10,7 +10,7 @@ const Candidate = keystone.list('Candidate').model;
 const getViewer = ({ id, pv, type }) => {
   const queryParams = {
     _id: id,
-    passwordVersion: pv ? keystone.pvCryptr.decrypt(pv) : -1,
+    _pv: pv ? keystone.pvCryptr.decrypt(pv) : -1,
   };
 
   let viewer = Promise.resolve(null);

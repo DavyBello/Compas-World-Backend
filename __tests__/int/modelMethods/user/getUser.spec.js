@@ -56,6 +56,6 @@ describe('getUser', () => {
     const user = await viewer;
 
     expect(user.id).to.equal(me._id.toString());
-    expect(user.passwordVersion).to.equal(me.passwordVersion);
+    expect(user._pv).to.equal(me._pv);
   });
 });

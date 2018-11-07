@@ -17,7 +17,6 @@ keystoneAdmin.add({
     type: Types.Email, initial: true, required: true, unique: true, index: true,
   },
   password: { type: Types.Password, initial: true, required: true },
-  passwordVersion: { type: Types.Number, required: true, default: 1 },
 }, 'Permissions', {
   isAdmin: { type: Boolean, label: 'Can access Keystone', index: true },
   recieveGuestEnquiries: { type: Boolean, label: 'receives notification email when an equiry is made', index: true },

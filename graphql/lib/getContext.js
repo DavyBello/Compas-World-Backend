@@ -16,7 +16,7 @@ module.exports = ({ jwtPayload = {} } = {}) => {
   if (jwtPayload) {
     const queryParams = {
       _id: jwtPayload.id,
-      passwordVersion: jwtPayload.pv ? keystone.pvCryptr.decrypt(jwtPayload.pv) : -1,
+      _pv: jwtPayload.pv ? keystone.pvCryptr.decrypt(jwtPayload.pv) : -1,
     };
 
     context = {
