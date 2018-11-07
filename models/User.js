@@ -10,6 +10,7 @@ const ModelMethods = require('../modelMethods/user/index.js');
  */
 const User = new keystone.List('User');
 
+// TODO: minimum password age, password complexity validation
 User.add({
   name: { type: Types.Text, index: true },
   username: {
