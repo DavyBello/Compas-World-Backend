@@ -22,12 +22,12 @@ mongoose.Promise = Promise;
 
 async function connectMongoose() {
   try {
-    keystone.set('mongoose', mongoose);
-    await keystone.mongoose.connect(global.__MONGO_URI__, {
+    await mongoose.connect(global.__MONGO_URI__, {
       ...mongooseOptions,
       // dbName: global.__MONGO_DB_NAME__,
       useMongoClient: true,
     });
+    keystone.set('mongoose', mongoose);
   } catch (e) {
     console.log(e);
     return (e);
