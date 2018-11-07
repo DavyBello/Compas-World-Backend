@@ -1,10 +1,9 @@
 const keystone = require('keystone');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
+const { UserInputError } = require('apollo-server');
 
 const User = keystone.list('User').model;
-
-const { UserInputError } = require('apollo-server');
 
 module.exports = {
   kind: 'mutation',

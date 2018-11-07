@@ -1,6 +1,7 @@
 const keystone = require('keystone');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
+const { UserInputError } = require('apollo-server');
 
 const User = keystone.list('User').model;
 
@@ -17,7 +18,7 @@ module.exports = {
   type: `type ResetPasswordPayload {
 		token: String!
 		name: String!
-		userType: String!
+		userType: String
 	}`,
   resolve: async ({ args }) => {
     const { input: { code, newPassword } } = args;
@@ -28,7 +29,7 @@ module.exports = {
         if (createdAt && moment(createdAt).isAfter(moment().subtract(24, 'hours'))) {
           const user = await User.findOne({
             _id: id,
-            passwordVersion: pv ? keystone.pvCryptr.decrypt(pv) : -1,
+            _pv: pv ? keystone.pvCryptr.decrypt(pv) : -1,
           });
           if (user) {
             // validate password
@@ -40,26 +41,26 @@ module.exports = {
                 if (!isMatch) {
                   // change password
                   user.password = newPassword;
-                  user.passwordVersion += 1;
+                  user._pv += 1;
                   await user.save();
                   const token = user.signToken();
                   resolve({
                     name: user.name,
-                    jwt: token,
-                    userType: user.__t || 'user',
+                    token,
+                    // userType: user.__t || 'user',
                   });
                 }
-                reject(Error('same password'));
+                reject(new UserInputError('do not repeat passwords'));
               });
             });
           }
-          return Promise.reject(Error('invalid token'));
+          return Promise.reject(new UserInputError('user not found'));
         }
-        return Promise.reject(Error('expired token'));
+        return Promise.reject(new UserInputError('expired token'));
       }
-      return Promise.reject(Error('invalid token'));
+      return Promise.reject(new UserInputError('invalid token'));
     } catch (e) {
-      throw e;
+      throw new UserInputError(e);
     }
   },
 };

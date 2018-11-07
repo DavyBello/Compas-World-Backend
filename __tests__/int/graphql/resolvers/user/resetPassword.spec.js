@@ -1,9 +1,12 @@
+const keystone = require('keystone');
 const chai = require('chai');
 const { graphql } = require('graphql');
 
+const User = keystone.list('User').model;
+
 const schema = require('../../../../../graphql/schema');
 
-// const { decodeToken } = require('../../../../modelMethods/user');
+const createPasswordResetCode = require('../../../../../lib/createPasswordResetCode');
 
 const {
   connectMongoose, clearDbAndRestartCounters, disconnectMongoose, createRows, getContext
@@ -12,16 +15,17 @@ const {
 const { expect } = chai;
 
 // language=GraphQL
-const LOGIN_CANDIDATE_MUTATION = `
+const USER_RESET_PASSWORD_MUTATION = `
 mutation M(
-  $phone: String!,
-  $password: String!
+  $code: String!
+  $newPassword: String!
 ) {
-  loginCandidate(input: {
-    phone: $phone,
-    password: $password
+  userResetPassword(input: {
+    code: $code
+    newPassword: $newPassword
   }) {
     token
+    userType
     name
   }
 }
@@ -33,58 +37,127 @@ beforeEach(clearDbAndRestartCounters);
 
 after(disconnectMongoose);
 
-describe.skip('resetPassword Mutation', () => {
-  it('should not login if phone is not in the database', async () => {
-    const query = LOGIN_CANDIDATE_MUTATION;
+describe('resetPassword Mutation', () => {
+  it('should return an error if the token is malformed', async () => {
+    const query = USER_RESET_PASSWORD_MUTATION;
 
     const rootValue = {};
     const context = getContext();
     const variables = {
-      phone: '0818855561',
-      password: 'awesome',
+      code: '0818855561',
+      newPassword: 'newpassword'
     };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate).to.equal(null);
-    expect(result.errors[0].message).to.equal('phone/user not found');
+    expect(result.data.userResetPassword).to.equal(null);
+    expect(result.errors[0].message).to.equal('JsonWebTokenError: jwt malformed');
   });
 
-  it('should not login with wrong password', async () => {
-    const user = await createRows.createCandidate();
+  it('should return an error if the token is invalid', async () => {
+    const query = USER_RESET_PASSWORD_MUTATION;
 
-    const query = LOGIN_CANDIDATE_MUTATION;
+    const code = createPasswordResetCode({
+      _id: null,
+      _pv: 1,
+    });
 
     const rootValue = {};
     const context = getContext();
     const variables = {
-      phone: user.phone,
-      password: 'awesome',
+      code,
+      newPassword: 'awesomenewpassword',
     };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate).to.equal(null);
-    expect(result.errors[0].message).to.equal('invalid password');
+    expect(result.data.userResetPassword).to.equal(null);
+    expect(result.errors[0].message).to.equal('invalid token');
   });
 
-  it('should generate token when email and password is correct', async () => {
-    const password = 'awesome';
-    const user = await createRows.createCandidate({ password });
+  it('should return an error if the token is expired', async () => {
+    const query = USER_RESET_PASSWORD_MUTATION;
 
-    const query = LOGIN_CANDIDATE_MUTATION;
+    const code = createPasswordResetCode({
+      _id: 'exampleid',
+      _pv: 1,
+    }, {
+      createdAt: (d => new Date(d.setDate(d.getDate() - 1)))(new Date)
+    });
 
     const rootValue = {};
     const context = getContext();
     const variables = {
-      phone: user.phone,
-      password: 'awesome',
+      code,
+      newPassword: 'awesomenewpassword',
     };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate.name).to.equal(user.name);
-    expect(result.data.loginCandidate.token).to.exist;
+    expect(result.data.userResetPassword).to.equal(null);
+    expect(result.errors[0].message).to.equal('expired token');
+  });
+
+  it('should return an error if the newPassword is the same with the oldPassword', async () => {
+    const password = 'supersecurepassword'
+    const user = await createRows.createUser({
+      isVerified: true,
+      password
+    });
+
+    const query = USER_RESET_PASSWORD_MUTATION;
+
+    const code = createPasswordResetCode(user);
+
+    const rootValue = {};
+    const context = getContext();
+    const variables = {
+      code,
+      newPassword: password,
+    };
+
+    const result = await graphql(schema, query, rootValue, context, variables);
+
+    expect(result.data.userResetPassword).to.equal(null);
+    expect(result.errors[0].message).to.equal('do not repeat passwords');
+  });
+
+  it('should change the users password if the inputs are valid', async () => {
+    const password = 'supersecurepassword'
+    const newPassword = 'newsupersecurepassword'
+    const user = await createRows.createUser({
+      isVerified: true,
+      password
+    });
+
+    const query = USER_RESET_PASSWORD_MUTATION;
+
+    const code = createPasswordResetCode(user);
+
+    const rootValue = {};
+    const context = getContext();
+    const variables = {
+      code,
+      newPassword: newPassword,
+    };
+
+    const result = await graphql(schema, query, rootValue, context, variables);
+
+    expect(result.data.userResetPassword.name).to.equal(user.name);
     expect(result.errors).to.be.undefined;
+
+    const _user = await User.findById(user._id);
+    expect(_user._pv).to.equal(2);
+    await new Promise((resolve, reject) => {
+      _user._.password.compare(newPassword, async (err, isMatch) => {
+        try {
+          expect(err).to.be.null;
+          expect(isMatch).to.equal(true);
+          resolve();
+        } catch (error) {
+          reject(error)
+        }
+      });
+    });
   });
 });
