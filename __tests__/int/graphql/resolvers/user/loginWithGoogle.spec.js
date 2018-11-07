@@ -32,7 +32,7 @@ beforeEach(clearDbAndRestartCounters);
 
 after(disconnectMongoose);
 
-describe('loginWithEmail Mutation', () => {
+describe.skip('loginWithGoogle Mutation', () => {
   it('should not login if email is not in the database', async () => {
     const query = LOGIN_USER_MUTATION;
 

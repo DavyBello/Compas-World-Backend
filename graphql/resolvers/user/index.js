@@ -5,6 +5,7 @@ UserTC.addResolver(require('./isAuthenticated'));
 
 // Mutations
 UserTC.addResolver(require('./loginWithEmail'));
+UserTC.addResolver(require('./loginWithEmailNoPassport'));
 UserTC.addResolver(require('./loginWithGoogle'));
 UserTC.addResolver(require('./createAccount'));
 UserTC.addResolver(require('./verifyAccount'));
