@@ -10,10 +10,13 @@ const { checkEnv } = require('../utils/initApp');
 keystone.init({
   name: 'compas-world-backend',
   's3 config': {},
+  headless: true,
 });
 
 
 keystone.import('../models');
+
+keystone.set('routes', require('../routes'));
 
 checkEnv([
   'JWT_SECRET',
@@ -22,7 +25,6 @@ checkEnv([
 ]);
 
 keystone.pvCryptr = new Cryptr(process.env.PASSWORD_VERSION_SECRET);
-
 
 let mongod;
 before(async () => {
