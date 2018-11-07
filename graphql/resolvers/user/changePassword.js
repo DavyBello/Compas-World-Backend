@@ -1,3 +1,4 @@
+const { UserInputError } = require('apollo-server');
 const { UserTC } = require('../../composers');
 
 module.exports = {
@@ -13,27 +14,27 @@ module.exports = {
   type: UserTC,
   resolve: async ({ args, context: { viewer } }) => {
     const { input: { oldPassword, newPassword } } = args;
-    if (viewer) {
-      try {
-        // validate password
-        return new Promise((resolve, reject) => {
-          viewer._.password.compare(oldPassword, async (err, isMatch) => {
-            if (err) {
-              reject(err);
-            }
-            if (isMatch) {
+    try {
+      // validate password
+      return new Promise((resolve, reject) => {
+        viewer._.password.compare(oldPassword, async (err, isMatch) => {
+          if (err) {
+            reject(err);
+          }
+          if (isMatch) {
+            if (oldPassword !== newPassword) {
               // change password
               viewer.password = newPassword;
               await viewer.save();
               resolve(viewer);
             }
-            reject(Error('wrong password'));
-          });
+            reject(new UserInputError('do not repeat passwords'));
+          }
+          reject(new UserInputError('wrong oldPassword'));
         });
-      } catch (e) {
-        return Promise.reject(e);
-      }
+      });
+    } catch (e) {
+      return Promise.reject(e);
     }
-    return Promise.reject(Error('user must be logged in'));
   },
 };

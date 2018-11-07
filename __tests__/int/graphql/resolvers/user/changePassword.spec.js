@@ -1,9 +1,12 @@
+const keystone = require('keystone');
 const chai = require('chai');
 const { graphql } = require('graphql');
 
+const User = keystone.list('User').model;
+
 const schema = require('../../../../../graphql/schema');
 
-// const { decodeToken } = require('../../../../modelMethods/user');
+const { decodeToken } = require('../../../../../modelMethods/user');
 
 const {
   connectMongoose, clearDbAndRestartCounters, disconnectMongoose, createRows, getContext
@@ -12,16 +15,15 @@ const {
 const { expect } = chai;
 
 // language=GraphQL
-const LOGIN_CANDIDATE_MUTATION = `
+const USER_CHANGE_PASSWORD_MUTATION = `
 mutation M(
-  $phone: String!,
-  $password: String!
+  $oldPassword: String!,
+  $newPassword: String!
 ) {
-  changePassword(input: {
-    phone: $phone,
-    password: $password
+  userChangePassword(input: {
+    oldPassword: $oldPassword
+    newPassword: $newPassword
   }) {
-    token
     name
   }
 }
@@ -33,58 +35,93 @@ beforeEach(clearDbAndRestartCounters);
 
 after(disconnectMongoose);
 
-describe.skip('changePassword Mutation', () => {
-  it('should not login if phone is not in the database', async () => {
-    const query = LOGIN_CANDIDATE_MUTATION;
+describe('changePassword Mutation', () => {
+  it('should return an error if the oldPassword supplied is invalid', async () => {
+    const password = 'supersecurepassword'
+    const user = await createRows.createUser({
+      isVerified: true,
+      password
+    });
+
+    const token = user.signToken();
+    const jwtPayload = decodeToken(token);
+    
+    const query = USER_CHANGE_PASSWORD_MUTATION;
 
     const rootValue = {};
-    const context = getContext();
+    const context = getContext({ jwtPayload });
     const variables = {
-      phone: '0818855561',
-      password: 'awesome',
+      oldPassword: 'wrongPassword',
+      newPassword: 'awesome',
     };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate).to.equal(null);
-    expect(result.errors[0].message).to.equal('phone/user not found');
+    expect(result.data.userChangePassword).to.equal(null);
+    expect(result.errors[0].message).to.equal('wrong oldPassword');
   });
+  
+  it('should return an error if the newPassword is the same with the oldPassword', async () => {
+    const password = 'supersecurepassword'
+    const user = await createRows.createUser({ 
+      isVerified: true,
+      password
+    });
 
-  it('should not login with wrong password', async () => {
-    const user = await createRows.createCandidate();
-
-    const query = LOGIN_CANDIDATE_MUTATION;
+    const token = user.signToken();
+    const jwtPayload = decodeToken(token);
+    
+    const query = USER_CHANGE_PASSWORD_MUTATION;
 
     const rootValue = {};
-    const context = getContext();
+    const context = getContext({ jwtPayload });
     const variables = {
-      phone: user.phone,
-      password: 'awesome',
+      oldPassword: password,
+      newPassword: password,
     };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate).to.equal(null);
-    expect(result.errors[0].message).to.equal('invalid password');
+    expect(result.data.userChangePassword).to.equal(null);
+    expect(result.errors[0].message).to.equal('do not repeat passwords');
   });
+  
+  it('should change the users password if the inputs are valid', async () => {
+    const password = 'supersecurepassword'
+    const newPassword = 'newsupersecurepassword'
+    const user = await createRows.createUser({ 
+      isVerified: true,
+      password
+    });
 
-  it('should generate token when email and password is correct', async () => {
-    const password = 'awesome';
-    const user = await createRows.createCandidate({ password });
-
-    const query = LOGIN_CANDIDATE_MUTATION;
+    const token = user.signToken();
+    const jwtPayload = decodeToken(token);
+    
+    const query = USER_CHANGE_PASSWORD_MUTATION;
 
     const rootValue = {};
-    const context = getContext();
+    const context = getContext({ jwtPayload });
     const variables = {
-      phone: user.phone,
-      password: 'awesome',
+      oldPassword: password,
+      newPassword: newPassword,
     };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate.name).to.equal(user.name);
-    expect(result.data.loginCandidate.token).to.exist;
+    expect(result.data.userChangePassword.name).to.equal(user.name);
     expect(result.errors).to.be.undefined;
+
+    const _user = await User.findById(user._id);
+    await new Promise((resolve, reject) => {
+      _user._.password.compare(newPassword, async (err, isMatch) => {
+        try {
+          expect(err).to.be.null;
+          expect(isMatch).to.equal(true);
+          resolve();
+        } catch (error) {
+          reject(error)
+        }
+      });  
+    });
   });
 });
