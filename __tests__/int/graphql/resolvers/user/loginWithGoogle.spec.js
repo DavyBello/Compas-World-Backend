@@ -1,7 +1,11 @@
+const keystone = require('keystone');
 const chai = require('chai');
 const { graphql } = require('graphql');
 const { createRequest, createResponse } = require('node-mocks-http');
 
+const User = keystone.list('User').model;
+
+const mockedGoogleProfile = require('../../../../mocks/passport/profile/mockGoogleProfile')
 const schema = require('../../../../../graphql/schema');
 
 const {
@@ -11,15 +15,9 @@ const {
 const { expect } = chai;
 
 // language=GraphQL
-const LOGIN_USER_MUTATION = `
-mutation M(
-  $email: String!,
-  $password: String!
-) {
-  loginUser(input: {
-    email: $email,
-    password: $password
-  }) {
+const AUTH_GOOGLE_MUTATION = `
+mutation M($accessToken: String!) {
+  authGoogle(input: { accessToken: $accessToken }) {
     token
     name
   }
@@ -32,31 +30,9 @@ beforeEach(clearDbAndRestartCounters);
 
 after(disconnectMongoose);
 
-describe.skip('loginWithGoogle Mutation', () => {
-  it('should not login if email is not in the database', async () => {
-    const query = LOGIN_USER_MUTATION;
-
-    const rootValue = {};
-    const context = { 
-      ...getContext(),
-      req: createRequest(),
-      res: createResponse(),
-    };
-    const variables = {
-      email: '0818855561',
-      password: 'awesome',
-    };
-
-    const result = await graphql(schema, query, rootValue, context, variables);
-
-    expect(result.data.loginUser).to.equal(null);
-    expect(result.errors[0].message).to.equal('invalid credentials');
-  });
-
-  it('should not login with wrong password', async () => {
-    const user = await createRows.createUser({ password: 'notawesome' });
-
-    const query = LOGIN_USER_MUTATION;
+describe('loginWithGoogle Mutation', () => {
+  it('should generate a token and create a user if the user does not exist in the database', async () => {
+    const query = AUTH_GOOGLE_MUTATION;
 
     const rootValue = {};
     const context = {
@@ -65,37 +41,41 @@ describe.skip('loginWithGoogle Mutation', () => {
       res: createResponse(),
     };
     const variables = {
-      email: user.email,
-      password: 'awesome',
+      accessToken: 'mockedGoogleAccessToken'
     };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginUser).to.equal(null);
-    expect(result.errors[0].message).to.equal('invalid credentials');
-  });
-
-  it('should generate token when email and password is correct', async () => {
-    const password = 'awesome';
-    const user = await createRows.createUser({ password });
-
-    const query = LOGIN_USER_MUTATION;
-
-    const rootValue = {};
-    const context = {
-      ...getContext(),
-      req: createRequest(),
-      res: createResponse(),
-    };
-    const variables = {
-      email: user.email,
-      password,
-    };
-
-    const result = await graphql(schema, query, rootValue, context, variables);
-
-    expect(result.data.loginUser.name).to.equal(user.name);
-    expect(result.data.loginUser.token).to.exist;
     expect(result.errors).to.be.undefined;
+    expect(result.data.authGoogle.name).to.equal(mockedGoogleProfile.displayName);
+    expect(result.data.authGoogle.token).to.exist;
+    
+    const user = await User.findOne({ email: mockedGoogleProfile.emails[0].value });
+    expect(result.data.authGoogle.name).to.equal(user.name);
+  });
+  
+  it('should generate a token if user exists in the database', async () => {
+    const user = await createRows.createUser({
+      email: mockedGoogleProfile.emails[0].value,
+      name: mockedGoogleProfile.displayName,
+    });
+
+    const query = AUTH_GOOGLE_MUTATION;
+
+    const rootValue = {};
+    const context = {
+      ...getContext(),
+      req: createRequest(),
+      res: createResponse(),
+    };
+    const variables = {
+      accessToken: 'mockedGoogleAccessToken'
+    };
+
+    const result = await graphql(schema, query, rootValue, context, variables);
+
+    expect(result.errors).to.be.undefined;
+    expect(result.data.authGoogle.name).to.equal(user.name);
+    expect(result.data.authGoogle.token).to.exist;
   });
 });

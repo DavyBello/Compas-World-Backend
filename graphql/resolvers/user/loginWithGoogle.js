@@ -1,7 +1,5 @@
 const passport = require('passport');
-// const keystone = require('keystone');
-
-// const User = keystone.list('User').model;
+const { UserInputError } = require('apollo-server');
 
 module.exports = {
   kind: 'mutation',
@@ -29,20 +27,25 @@ module.exports = {
         }
 
         if (user) {
-          req.login(user, { session: false }, (error) => {
-            if (error) {
-              reject(error);
-            }
-            resolve({
-              name: user.name,
-              token: user.signToken(),
-            });
+          resolve({
+            name: user.name,
+            token: user.signToken(),
           });
         }
         if (info) {
-          if (info.code === 'NOTFOUND') reject(Error('invalid credentials'));
-          else if (info.code === 'WRONGPASSWORD') reject(Error('invalid credentials'));
-          else reject(Error('something went wrong'));
+          switch (info.code) {
+            case 'NOTFOUND':
+              reject(new UserInputError('invalid credentials'));
+              break;
+
+            case 'WRONGPASSWORD':
+              reject(new UserInputError('invalid credentials'));
+              break;
+
+            default:
+              reject(new UserInputError('something went wrong'));
+              break;
+          }
         }
         reject(Error('server error'));
       })(req, res);
