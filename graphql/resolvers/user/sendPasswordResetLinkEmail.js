@@ -2,37 +2,35 @@ const keystone = require('keystone');
 
 const User = keystone.list('User').model;
 
+const { UserInputError } = require('apollo-server');
+
 module.exports = {
   kind: 'mutation',
   name: 'sendPasswordResetLinkEmail',
   description: 'Send password reset link to user email',
   args: {
-    input: `input ResetPasswordLinkInput {
+    input: `input sendPasswordResetLinkEmailInput {
       email: String!
     }`,
   },
-  type: `type ResetPasswordLinkPayload {
+  type: `type sendPasswordResetLinkEmailPayload {
 		status: String!
 		email: String!
 	}`,
-  resolve: async ({ args }) => {
+  resolve: async ({ args, context: { services } }) => {
     const { input: { email } } = args;
     const user = await User.findOne({ email });
     if (user) {
-      if (user.getPasswordResetLinkEmail) {
-        try {
-          await user.getPasswordResetLinkEmail().send();
-          return ({
-            status: 'success',
-            email: user.email,
-          });
-        } catch (e) {
-          return Promise.reject(e);
-        }
-      } else {
-        return Promise.reject(Error('this user cannot run this mutation'));
+      try {
+        await services.sendPasswordResetLinkEmail(user);
+        return ({
+          status: 'success',
+          email: user.email,
+        });
+      } catch (e) {
+        return e;
       }
     }
-    return Promise.reject(Error('user not found'));
+    return new UserInputError('user not found');
   },
 };

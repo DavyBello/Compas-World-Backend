@@ -3,8 +3,6 @@ const { graphql } = require('graphql');
 
 const schema = require('../../../../../graphql/schema');
 
-// const { decodeToken } = require('../../../../modelMethods/user');
-
 const {
   connectMongoose, clearDbAndRestartCounters, disconnectMongoose, createRows, getContext
 } = require('../../../../helper');
@@ -12,17 +10,11 @@ const {
 const { expect } = chai;
 
 // language=GraphQL
-const LOGIN_CANDIDATE_MUTATION = `
-mutation M(
-  $phone: String!,
-  $password: String!
-) {
-  loginCandidate(input: {
-    phone: $phone,
-    password: $password
-  }) {
-    token
-    name
+const USER_SEND_PASSWORD_RESET_EMAIL_MUTATION = `
+mutation M($email: String!){
+  userSendPasswordResetLink(input: { email: $email }){
+    status
+    email
   }
 }
 `;
@@ -33,58 +25,33 @@ beforeEach(clearDbAndRestartCounters);
 
 after(disconnectMongoose);
 
-describe.skip('handlePasswordResetLinkEmail Mutation', () => {
-  it('should not login if phone is not in the database', async () => {
-    const query = LOGIN_CANDIDATE_MUTATION;
+describe('sendPasswordResetLinkEmail Mutation', () => {
+  it('should send the password reset email if the input is valid', async () => {
+    const user = await createRows.createUser();
+
+    const query = USER_SEND_PASSWORD_RESET_EMAIL_MUTATION;
 
     const rootValue = {};
     const context = getContext();
-    const variables = {
-      phone: '0818855561',
-      password: 'awesome',
-    };
+    const variables = { email: user.email };
 
     const result = await graphql(schema, query, rootValue, context, variables);
 
-    expect(result.data.loginCandidate).to.equal(null);
-    expect(result.errors[0].message).to.equal('phone/user not found');
-  });
-
-  it('should not login with wrong password', async () => {
-    const user = await createRows.createCandidate();
-
-    const query = LOGIN_CANDIDATE_MUTATION;
-
-    const rootValue = {};
-    const context = getContext();
-    const variables = {
-      phone: user.phone,
-      password: 'awesome',
-    };
-
-    const result = await graphql(schema, query, rootValue, context, variables);
-
-    expect(result.data.loginCandidate).to.equal(null);
-    expect(result.errors[0].message).to.equal('invalid password');
-  });
-
-  it('should generate token when email and password is correct', async () => {
-    const password = 'awesome';
-    const user = await createRows.createCandidate({ password });
-
-    const query = LOGIN_CANDIDATE_MUTATION;
-
-    const rootValue = {};
-    const context = getContext();
-    const variables = {
-      phone: user.phone,
-      password: 'awesome',
-    };
-
-    const result = await graphql(schema, query, rootValue, context, variables);
-
-    expect(result.data.loginCandidate.name).to.equal(user.name);
-    expect(result.data.loginCandidate.token).to.exist;
     expect(result.errors).to.be.undefined;
+    expect(result.data.userSendPasswordResetLink.email).to.equal(user.email);
+    expect(result.data.userSendPasswordResetLink.status).to.equal('success');
+  });
+
+  it('should return an error if the user does not exist', async () => {
+    const query = USER_SEND_PASSWORD_RESET_EMAIL_MUTATION;
+
+    const rootValue = {};
+    const context = getContext();
+    const variables = { email: 'nonexistentemail@ridic.com' };
+
+    const result = await graphql(schema, query, rootValue, context, variables);
+
+    expect(result.data.userSendPasswordResetLink).to.equal(null);
+    expect(result.errors[0].message).to.equal('user not found');
   });
 });
