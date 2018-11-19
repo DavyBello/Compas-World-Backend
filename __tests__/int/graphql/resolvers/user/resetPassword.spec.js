@@ -147,7 +147,7 @@ describe('resetPassword Mutation', () => {
     expect(result.errors).to.be.undefined;
 
     const _user = await User.findById(user._id);
-    expect(_user._pv).to.equal(2);
+    expect(_user._pv).to.equal(user._pv + 1);
     await new Promise((resolve, reject) => {
       _user._.password.compare(newPassword, async (err, isMatch) => {
         try {

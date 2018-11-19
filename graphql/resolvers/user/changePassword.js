@@ -25,6 +25,7 @@ module.exports = {
             if (oldPassword !== newPassword) {
               // change password
               viewer.password = newPassword;
+              viewer._pv += 1;
               await viewer.save();
               resolve(viewer);
             }
